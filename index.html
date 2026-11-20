@@ -1,0 +1,811 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Group Hold: BookMyShow design prototype</title>
+<style>
+:root{
+  --red:#dc3558; --red-d:#c22a4a; --ink:#333; --mute:#767676; --faint:#b0b0b0;
+  --line:#e8e8e8; --bg:#f5f5f5; --green:#1ea83c; --green-bg:#e8f6ec;
+  --amber:#a15c00; --amber-bg:#fff3de; --danger:#c62828; --danger-bg:#fdecec;
+  --navy:#2b3148;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%}
+body{font-family:Roboto,-apple-system,"Segoe UI",system-ui,sans-serif;color:var(--ink);background:#dfe1e8;font-size:14px;line-height:1.35}
+button{font:inherit;color:inherit;cursor:pointer}
+button:disabled{cursor:not-allowed}
+.stage{display:flex;gap:28px;justify-content:center;align-items:flex-start;padding:20px;min-height:100%}
+.phone{width:390px;height:min(844px,calc(100vh - 40px));background:#fff;border-radius:34px;border:8px solid #1d1d22;overflow:hidden;position:relative;display:flex;flex-direction:column;flex:none;box-shadow:0 12px 40px rgba(0,0,0,.25)}
+#screen{flex:1;min-height:0;display:flex;flex-direction:column}
+.hdr{display:flex;align-items:center;gap:10px;padding:12px 14px;border-bottom:1px solid var(--line);background:#fff;flex:none}
+.hdr h1{font-size:16px;margin:0;font-weight:500;line-height:1.2}
+.hdr small{display:block;color:var(--mute);font-size:12px;margin-top:2px}
+.icon-btn{border:0;background:none;padding:6px;margin:-6px;font-size:20px;line-height:1;border-radius:8px}
+.body{flex:1;min-height:0;overflow-y:auto;background:var(--bg)}
+.ftr{flex:none;background:#fff;border-top:1px solid var(--line);padding:10px 14px 14px}
+.pad{padding:14px}
+.card{background:#fff;border-radius:10px;padding:14px;margin:10px 12px;border:1px solid var(--line)}
+.card h2{font-size:14px;margin:0 0 8px;font-weight:500}
+.muted{color:var(--mute)}
+.small{font-size:12px}
+.row{display:flex;align-items:center;gap:10px}
+.between{justify-content:space-between}
+.grow{flex:1;min-width:0}
+.btn{border:1px solid var(--red);background:var(--red);color:#fff;border-radius:8px;padding:12px 14px;font-weight:500;width:100%;font-size:15px}
+.btn:hover:not(:disabled){background:var(--red-d)}
+.btn.outline{background:#fff;color:var(--red)}
+.btn.outline:hover:not(:disabled){background:#fff0f3}
+.btn.ghost{background:none;border-color:transparent;color:var(--mute);font-weight:400}
+.btn.danger{background:#fff;border-color:var(--danger);color:var(--danger)}
+.btn.sm{padding:8px 10px;font-size:13px;width:auto}
+.btn:disabled{opacity:.45}
+.link{background:none;border:0;color:var(--red);padding:6px 0;font-size:13px;text-decoration:underline}
+.link.muted{color:var(--mute)}
+.pill{display:inline-block;border-radius:99px;padding:2px 8px;font-size:11px;font-weight:500;background:#eee;color:#555}
+.pill.ok{background:var(--green-bg);color:#17702b}
+.pill.warn{background:var(--amber-bg);color:var(--amber)}
+.pill.bad{background:var(--danger-bg);color:var(--danger)}
+.note{border-radius:8px;padding:10px 12px;font-size:12.5px;background:#fff7e6;color:#6b4a00}
+.note.info{background:#eef3ff;color:#2b3f7a}
+.note.ok{background:var(--green-bg);color:#17702b}
+.note.bad{background:var(--danger-bg);color:#8d1c1c}
+.note.plain{background:#f3f3f3;color:#555}
+.stack>*+*{margin-top:8px}
+hr.sep{border:0;border-top:1px solid var(--line);margin:12px 0}
+
+/* seats */
+.legend{display:flex;gap:14px;padding:10px 14px;background:#fff;font-size:11.5px;color:var(--mute);border-bottom:1px solid var(--line)}
+.legend i{display:inline-block;width:12px;height:12px;border-radius:3px;border:1px solid var(--green);vertical-align:-2px;margin-right:4px;background:#fff}
+.legend i.s{background:var(--green)} .legend i.x{background:#e4e4e4;border-color:#e4e4e4}
+.cat{padding:10px 8px 2px;font-size:11px;color:var(--mute);letter-spacing:.04em;text-align:left}
+.cat b{color:var(--ink);font-weight:500}
+.map{background:#fff;padding:2px 8px 14px;overflow-x:auto}
+.srow{display:flex;align-items:center;gap:3px;margin:4px 0;justify-content:center}
+.rl{width:14px;font-size:10px;color:var(--faint);text-align:center}
+.seat{width:19px;height:19px;border:1px solid var(--green);border-radius:4px 4px 2px 2px;background:#fff;color:var(--green);font-size:8px;padding:0;line-height:1}
+.seat.sold{background:#e4e4e4;border-color:#e4e4e4;color:transparent}
+.seat.sel{background:var(--green);color:#fff}
+.aisle{width:12px}
+.screenbar{margin:10px auto 0;width:78%;height:6px;border-radius:50%;background:#cfd3de}
+.screenlbl{text-align:center;font-size:10px;color:var(--faint);margin-top:4px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{background:#f1f1f4;border-radius:6px;padding:3px 8px;font-size:12px;font-weight:500}
+.chip.red{background:#fff0f3;color:var(--red-d)}
+
+/* duration options */
+.opt{display:flex;gap:10px;align-items:flex-start;width:100%;text-align:left;background:#fff;border:1.5px solid var(--line);border-radius:10px;padding:12px;margin-top:8px}
+.opt.on{border-color:var(--red);background:#fff7f9}
+.opt:disabled{background:#f3f3f3;color:#9a9a9a}
+.radio{width:18px;height:18px;border-radius:50%;border:2px solid #bbb;flex:none;margin-top:1px}
+.opt.on .radio{border-color:var(--red);background:radial-gradient(var(--red) 45%,transparent 50%)}
+.opt .t{font-weight:500}
+.dots{display:flex;gap:6px;margin:8px 0}
+.dot{width:22px;height:22px;border-radius:50%;border:2px dashed #ccc;display:grid;place-items:center;font-size:12px;color:#fff}
+.dot.paid{background:var(--green);border:2px solid var(--green)}
+.dot.pend{border:2px solid #e0a100;color:#e0a100}
+.bar{height:6px;border-radius:99px;background:#ececec;overflow:hidden}
+.bar>i{display:block;height:100%;background:var(--red)}
+.bignum{font-size:28px;font-weight:500;line-height:1.1}
+.kv{display:flex;justify-content:space-between;padding:4px 0;font-size:13px}
+.kv b{font-weight:500}
+.person{display:flex;align-items:center;gap:10px;padding:8px 0;border-top:1px solid var(--line)}
+.person:first-of-type{border-top:0}
+.av{width:30px;height:30px;border-radius:50%;background:#e9e9ef;display:grid;place-items:center;font-weight:500;font-size:13px;flex:none}
+.tick{width:46px;height:46px;border-radius:50%;background:var(--green);color:#fff;display:grid;place-items:center;font-size:24px;margin:0 auto 8px}
+.tick.red{background:var(--red)} .tick.amber{background:#e0a100}
+.center{text-align:center}
+.qr{width:110px;height:110px;margin:8px auto;background:
+ conic-gradient(#222 25%,#fff 0 50%,#222 0 75%,#fff 0) 0 0/22px 22px;border:6px solid #fff;outline:1px solid var(--line)}
+.ticket{background:#fff;border-radius:12px;border:1px solid var(--line);padding:14px;margin:10px 12px}
+.ticket .seatno{font-size:22px;font-weight:500;color:var(--red-d)}
+
+/* overlays */
+#overlay{position:absolute;inset:0;pointer-events:none}
+#overlay.on{pointer-events:auto;background:rgba(0,0,0,.5)}
+.sheet{position:absolute;left:0;right:0;bottom:0;background:#fff;border-radius:18px 18px 0 0;padding:16px 16px 20px;max-height:88%;overflow-y:auto}
+.modal{position:absolute;left:16px;right:16px;top:50%;transform:translateY(-50%);background:#fff;border-radius:14px;padding:18px;max-height:90%;overflow-y:auto}
+.modal h3,.sheet h3{margin:0 0 6px;font-size:17px;font-weight:500}
+.upi{display:flex;align-items:center;gap:12px;width:100%;text-align:left;border:1px solid var(--line);background:#fff;border-radius:10px;padding:10px 12px;margin-top:8px}
+.upi:hover{background:#fafafa}
+.upi .logo{width:32px;height:32px;border-radius:50%;background:#e9e9ef;display:grid;place-items:center;font-size:12px;font-weight:500}
+.spin{width:30px;height:30px;border-radius:50%;border:3px solid #eee;border-top-color:var(--red);margin:6px auto;animation:sp 0.9s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.spin{animation:none}}
+.stepper{display:flex;align-items:center;gap:14px;justify-content:center;margin:10px 0}
+.stepper button{width:34px;height:34px;border-radius:50%;border:1px solid var(--line);background:#fff;font-size:18px;line-height:1}
+.stepper b{font-size:22px;min-width:24px;text-align:center;font-weight:500}
+#toast{position:absolute;left:14px;right:14px;top:58px;background:#222;color:#fff;border-radius:10px;padding:10px 12px;font-size:13px;z-index:5;display:none}
+#toast.on{display:block}
+
+/* demo panel */
+.demo{width:320px;flex:none;background:#fff;border-radius:14px;padding:16px;box-shadow:0 4px 18px rgba(0,0,0,.12);max-height:calc(100vh - 40px);overflow-y:auto;position:sticky;top:20px}
+.demo h2{margin:0 0 4px;font-size:15px;font-weight:500}
+.demo h3{margin:14px 0 6px;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--mute);font-weight:500}
+.demo p{margin:0;color:var(--mute);font-size:12px}
+.seg{display:flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.seg button{flex:1;border:0;background:#fff;padding:7px 4px;font-size:12px;border-right:1px solid var(--line)}
+.seg button:last-child{border-right:0}
+.seg button.on{background:var(--navy);color:#fff}
+.demo select{width:100%;padding:7px;border:1px solid var(--line);border-radius:8px;font:inherit;font-size:13px;background:#fff}
+.demo .mini{border:1px solid var(--line);background:#fff;border-radius:7px;padding:5px 8px;font-size:12px}
+.demo .mini:hover:not(:disabled){background:#f3f3f6}
+.demo .mini:disabled{opacity:.4}
+.frow{display:flex;align-items:center;gap:6px;padding:4px 0}
+.frow .n{flex:1;font-size:13px}
+.btnrow{display:flex;gap:6px;flex-wrap:wrap}
+.demo-toggle{display:none}
+@media (max-width:860px){
+  .stage{padding:0;display:block}
+  .phone{width:100vw;height:100vh;height:100dvh;border:0;border-radius:0;box-shadow:none}
+  .demo{display:none;position:fixed;left:0;right:0;bottom:0;width:auto;max-height:72vh;border-radius:16px 16px 0 0;z-index:20;top:auto}
+  .demo.open{display:block}
+  .demo-toggle{display:block;position:fixed;right:10px;top:10px;z-index:21;padding:6px 10px !important;font-size:12px !important;background:var(--navy);color:#fff;border:0;border-radius:99px;padding:10px 14px;font-size:13px;box-shadow:0 3px 10px rgba(0,0,0,.3)}
+}
+</style>
+</head>
+<body>
+<div class="stage">
+  <div class="phone" id="phone">
+    <div id="screen"></div>
+    <div id="overlay"></div>
+    <div id="toast" role="status" aria-live="polite"></div>
+  </div>
+  <aside class="demo" id="demo" aria-label="Prototype controls"></aside>
+</div>
+<button class="demo-toggle" id="demoToggle" data-a="demo-toggle">Prototype controls</button>
+
+<script>
+/* ============ Data ============ */
+const MOVIE = {title:'The Last Reel', meta:'Hindi, 2D', cinema:'PVR: Orion Mall, Bengaluru'};
+const LAYOUT = {A:'..x..xx....x..',B:'xx......xx.x..',C:'xx.x...xx.xx..',D:'x....xxx...x.x',E:'.x......x..xxx',
+                F:'xxx.....x....x',G:'x.x..xx..xx...',H:'xxxx...x..xxxx',I:'..xx.....xx.xx',J:'x.xx..x....x.x'};
+const CAT = {A:'recliner',B:'recliner',C:'prime',D:'prime',E:'prime',F:'prime',G:'classic',H:'classic',I:'classic',J:'classic'};
+const CATS = {recliner:{name:'RECLINER',price:850},prime:{name:'PRIME',price:550},classic:{name:'CLASSIC',price:320}};
+const AISLE_AFTER = 6; // index of last seat before the aisle
+const SHOWS = [
+  {h:198,label:'8 days away',when:'Sat, 28 Nov | 9:00 PM'},
+  {h:30,label:'30 hours away',when:'Sat, 21 Nov | 9:00 PM'},
+  {h:24,label:'24 hours away',when:'Sat, 21 Nov | 3:00 PM'},
+  {h:7.5,label:'7 hours away',when:'Fri, 20 Nov | 10:30 PM'}
+];
+const DUR = [{h:6,pct:.08},{h:12,pct:.12},{h:18,pct:.16}];
+const POOL = ['Aman','Riya','Karan','Sneha','Meera','Dev','Isha','Neil','Zoya'];
+const BASE = new Date('2026-11-20T15:00:00');
+const UPIS = ['Google Pay','PhonePe','Paytm','Navi','BHIM'];
+
+/* ============ State ============ */
+const S = {
+  role:'org', screen:'seats', sel:[], modal:null, toast:null,
+  demo:{demand:'normal', hours:198, quota:'open', upi:'success'},
+  demoOpen:false, draft:null, hold:null, viewAs:'Aman', ts:0
+};
+const initial = () => JSON.stringify({demand:'normal',hours:198,quota:'open',upi:'success'});
+
+/* ============ Helpers ============ */
+const $ = s => document.querySelector(s);
+const inr = n => '\u20B9' + Math.round(n).toLocaleString('en-IN');
+const pl = (n,w) => n + ' ' + w + (n===1?'':'s');
+const show = () => SHOWS.find(s => s.h === S.demo.hours);
+const fmtDT = min => new Date(BASE.getTime()+min*60000)
+  .toLocaleString('en-IN',{weekday:'short',day:'numeric',month:'short',hour:'numeric',minute:'2-digit',hour12:true})
+  .replace(/\bam\b/,'AM').replace(/\bpm\b/,'PM');
+const fmtT = min => new Date(BASE.getTime()+min*60000)
+  .toLocaleString('en-IN',{hour:'numeric',minute:'2-digit',hour12:true}).replace(/\bam\b/,'AM').replace(/\bpm\b/,'PM');
+const fmtDur = min => { min=Math.max(0,Math.round(min)); const h=Math.floor(min/60), m=min%60; return h? h+'h '+String(m).padStart(2,'0')+'m' : m+'m'; };
+const rowOf = id => id[0];
+const colOf = id => parseInt(id.slice(1),10)-1;
+const sortSeats = a => [...a].sort((x,y)=> rowOf(x)<rowOf(y)?-1: rowOf(x)>rowOf(y)?1: colOf(x)-colOf(y));
+const price = id => CATS[CAT[rowOf(id)]].price;
+
+function runsOf(ids){
+  const by = {};
+  ids.forEach(id => (by[rowOf(id)] = by[rowOf(id)] || []).push(colOf(id)));
+  const runs = [];
+  Object.keys(by).sort().forEach(r => {
+    const cols = by[r].sort((a,b)=>a-b);
+    let cur = [cols[0]];
+    for(let i=1;i<cols.length;i++){
+      const c1=cols[i-1], c2=cols[i];
+      if(c2===c1+1 && !(c1===AISLE_AFTER)) cur.push(c2); else { runs.push({row:r,cols:cur}); cur=[c2]; }
+    }
+    runs.push({row:r,cols:cur});
+  });
+  return runs;
+}
+const runLabel = r => r.cols.length===1 ? r.row+(r.cols[0]+1) : r.row+(r.cols[0]+1)+'\u2013'+r.row+(r.cols[r.cols.length-1]+1);
+const runsText = ids => runsOf(ids).map(runLabel).join(', ');
+
+/* Release order: isolated seats first, then ends of the smallest runs, farthest from the group's centre.
+   Never releases from the middle of a run of adjacent seats. */
+function trimSeats(ids, k){
+  let cur = [...ids]; const out = [];
+  for(let n=0;n<k && cur.length;n++){
+    const runs = runsOf(cur);
+    const cr = cur.reduce((a,id)=>a+rowOf(id).charCodeAt(0),0)/cur.length;
+    const cc = cur.reduce((a,id)=>a+colOf(id),0)/cur.length;
+    const dist = id => Math.hypot((rowOf(id).charCodeAt(0)-cr)*1.5, colOf(id)-cc);
+    let cands = [];
+    const iso = runs.filter(r=>r.cols.length===1);
+    if(iso.length) cands = iso.map(r=>r.row+(r.cols[0]+1));
+    else {
+      const min = Math.min(...runs.map(r=>r.cols.length));
+      runs.filter(r=>r.cols.length===min).forEach(r=>{ cands.push(r.row+(r.cols[0]+1)); cands.push(r.row+(r.cols[r.cols.length-1]+1)); });
+    }
+    cands.sort((a,b)=>dist(b)-dist(a));
+    const pick = cands[0]; out.push(pick); cur = cur.filter(x=>x!==pick);
+  }
+  return out;
+}
+
+/* demand / eligibility / deposit */
+const durState = h => {
+  if(S.demo.hours - 18 < h) return 'time';
+  if(S.demo.demand==='high' && h===18) return 'demand';
+  if(S.demo.demand==='veryhigh' && h>=12) return 'demand';
+  return null;
+};
+const depPerSeat = (cat,p,h) => {
+  const pct = DUR.find(x=>x.h===h).pct;
+  const mult = (cat==='recliner' || S.demo.demand!=='normal') ? 1.5 : 1;
+  return Math.round(p*pct*mult/2)*2;
+};
+const higherRate = cat => cat==='recliner' || S.demo.demand!=='normal';
+function holdGate(){
+  if(S.sel.length<2) return {ok:false, reason:'Select at least 2 seats to hold them for your group.'};
+  if(S.demo.hours-18<6) return {ok:false, reason:'Holds are not available this close to showtime. You can still book now.'};
+  if(S.demo.quota==='full') return {ok:false, reason:'Group holds are full for this show right now. You can still book now.'};
+  return {ok:true};
+}
+
+/* hold math */
+const D = h => h.d * h.origCount;
+const remaining = h => h.endMin - h.now;
+const openPlaces = h => h.seats.length - h.payers.length - h.pending.length;
+const unpaid = h => h.seats.length - h.payers.length;
+
+function log(h,msg){ h.log.unshift({m:h.now,t:msg}); }
+function toast(msg){
+  S.toast = msg; const my = ++S.ts;
+  render();
+  setTimeout(()=>{ if(S.ts===my){ S.toast=null; render(); } }, 3600);
+}
+
+/* ============ Hold lifecycle ============ */
+function createHold(){
+  const d = S.draft;
+  const per = depPerSeat(d.cat, d.price, d.durH);
+  S.hold = {seats:[...d.seats], origCount:d.seats.length, cat:d.cat, price:d.price, durH:d.durH, d:per,
+    endMin:d.durH*60, now:0, payers:[], pending:[], declined:[], released:[], kept:0,
+    status:'active', grace:false, result:null, assign:[], log:[], link:'bms.in/g/RH-4KQ9'};
+  log(S.hold, 'Hold started. Deposit of '+inr(D(S.hold))+' paid.');
+  S.screen = 'dash';
+}
+function addPayer(name,you){
+  const h = S.hold; if(!h||h.status!=='active') return;
+  h.pending = h.pending.filter(x=>x.name!==name || x.you!==you);
+  h.payers.push({name,you:!!you,at:h.now});
+  log(h, (you?'You':name)+' paid '+inr(h.price)+' for a seat.');
+  afterChange();
+}
+function afterChange(){
+  const h = S.hold; if(!h||h.status!=='active') return;
+  if(h.payers.length===h.seats.length){ confirmHold('all-paid'); return; }
+  if(h.grace && !h.pending.length) doExpire();
+}
+function confirmHold(kind){
+  const h = S.hold; const seats = sortSeats(h.seats);
+  h.assign = h.payers.map((p,i)=>({name:p.name,you:p.you,seat:seats[i]}));
+  h.status = 'confirmed'; h.grace = false;
+  h.result = {kind, released:[...h.released], kept:h.kept, returned:D(h)-h.kept};
+  S.screen = 'result';
+}
+function endHold(kind){
+  const h = S.hold; h.status = 'ended'; h.grace = false;
+  h.result = {kind, released:[...h.released], kept:h.kept, returned:D(h)-h.kept};
+  S.screen = 'result';
+}
+function releaseSeats(n, why){
+  const h = S.hold; const gone = trimSeats(h.seats, n);
+  h.seats = h.seats.filter(s=>!gone.includes(s));
+  h.released.push(...gone);
+  h.kept += n*h.d*0.5;
+  log(h, (why||'Released')+' '+gone.join(', ')+'. '+inr(n*h.d*0.5)+' of deposit kept.');
+  return gone;
+}
+function doExpire(){
+  const h = S.hold; const u = unpaid(h);
+  if(h.payers.length===0){ h.released.push(...h.seats); h.seats=[]; h.kept = D(h); log(h,'Hold ended with no seats paid.'); endHold('none'); return; }
+  const gone = trimSeats(h.seats,u);
+  h.seats = h.seats.filter(s=>!gone.includes(s)); h.released.push(...gone);
+  h.kept += u*h.d;
+  log(h,'Hold ended. Released '+gone.join(', ')+'. '+inr(u*h.d)+' of deposit kept.');
+  confirmHold('expired');
+}
+function maybeExpire(){
+  const h = S.hold; if(!h||h.status!=='active') return;
+  if(remaining(h)<=0){ if(h.pending.length){ h.grace=true; } else doExpire(); }
+}
+function advance(min){
+  const h = S.hold; if(!h||h.status!=='active') return;
+  h.now = Math.min(h.endMin, h.now+min);
+  maybeExpire();
+}
+
+/* ============ Actions ============ */
+function act(a, d){
+  const h = S.hold;
+  switch(a){
+    case 'demo-toggle': S.demoOpen = !S.demoOpen; break;
+    case 'role': S.role = d.v; break;
+    case 'viewas': S.viewAs = d.v; break;
+    case 'demand': S.demo.demand = d.v; break;
+    case 'upi-next': S.demo.upi = d.v; break;
+    case 'reset': { const keep=S.demoOpen; Object.assign(S,{role:'org',screen:'seats',sel:[],modal:null,toast:null,draft:null,hold:null,viewAs:'Aman'}); S.demo=JSON.parse(initial()); S.demoOpen=keep; break; }
+
+    case 'seat': {
+      const id = d.id;
+      if(S.sel.includes(id)) S.sel = S.sel.filter(x=>x!==id);
+      else {
+        if(S.sel.length>=10){ toast('You can select up to 10 seats.'); return; }
+        if(S.sel.length && CAT[rowOf(S.sel[0])]!==CAT[rowOf(id)]){ toast('Pick seats from one price category at a time.'); return; }
+        S.sel.push(id);
+      }
+      break;
+    }
+    case 'pay-normal': toast('Standard checkout. Unchanged in this prototype.'); return;
+    case 'go': S.screen = d.to; break;
+    case 'open-setup': {
+      if(!holdGate().ok) return;
+      const cat = CAT[rowOf(S.sel[0])];
+      S.draft = {seats:sortSeats(S.sel), cat, price:CATS[cat].price, durH:null};
+      S.screen = 'setup'; break;
+    }
+    case 'dur': S.draft.durH = +d.h; break;
+    case 'pay-deposit': {
+      const per = depPerSeat(S.draft.cat,S.draft.price,S.draft.durH);
+      openUpi({purpose:'deposit', amount:per*S.draft.seats.length, title:'Hold deposit'});
+      return;
+    }
+    case 'org-pay': openUpi({purpose:'org', amount:h.price, title:'Your seat', name:'You'}); return;
+    case 'friend-pay': openUpi({purpose:'friend', amount:h.price, title:'Your seat', name:S.viewAs}); return;
+    case 'upi-pick': runUpi(); return;
+    case 'upi-retry': S.modal.stage='choose'; break;
+    case 'upi-close': S.modal=null; break;
+    case 'upi-check': resolvePendingModal(); return;
+    case 'close-modal': S.modal=null; break;
+
+    case 'share': S.modal={type:'share'}; break;
+    case 'copy': toast('Link copied.'); return;
+    case 'preview-friend': { S.modal=null; S.role='friend'; const free=POOL.find(n=>!h.payers.some(p=>p.name===n)&&!h.pending.some(p=>p.name===n)); S.viewAs=free||POOL[0]; break; }
+
+    case 'open-release': S.modal={type:'release', n:1}; break;
+    case 'rel-inc': S.modal.n = Math.min(openPlaces(h), S.modal.n+1); break;
+    case 'rel-dec': S.modal.n = Math.max(1, S.modal.n-1); break;
+    case 'do-release': {
+      const n = Math.min(S.modal.n, openPlaces(h)); S.modal=null; const gone = releaseSeats(n,'Released');
+      afterChange();
+      toast('Released '+gone.join(', ')+'. '+inr(n*h.d*0.5)+' of deposit kept.');
+      break;
+    }
+    case 'open-finalize': S.modal={type:'finalize'}; break;
+    case 'do-finalize': {
+      const n = openPlaces(h); S.modal=null;
+      if(h.payers.length===0){ cancelHold(); return; }
+      if(n>0){ releaseSeats(n,'Finalized early, released'); }
+      confirmHold('finalized'); break;
+    }
+    case 'open-cancel': S.modal={type:'cancel'}; break;
+    case 'do-cancel': S.modal=null; cancelHold(); return;
+    case 'open-withdraw': S.modal={type:'withdraw'}; break;
+    case 'do-withdraw': {
+      S.modal=null; h.payers = h.payers.filter(p=>p.name!==S.viewAs);
+      log(h, S.viewAs+' withdrew and was refunded '+inr(h.price)+'. Place reopened.');
+      toast('Withdrawn. '+inr(h.price)+' will be refunded to your UPI account.'); break;
+    }
+    case 'decline': { if(!h.declined.includes(S.viewAs)){ h.declined.push(S.viewAs); log(h,S.viewAs+' can\'t make it.'); } toast('Rohan has been told you can\'t make it.'); break; }
+    case 'check-pending': { const name = S.viewAs; const p = h.pending.find(x=>x.name===name&&!x.you); if(p) addPayer(name,false); break; }
+
+    /* demo-panel friend/time controls */
+    case 'f-pays': { const n=d.n; if(h.pending.some(x=>x.name===n)){ addPayer(n,false); toast(n+' paid '+inr(h.price)+'.'); break; }
+      if(openPlaces(h)<=0){ toast('No open places left.'); break; }
+      h.payers.push({name:n,you:false,at:h.now}); log(h,n+' paid '+inr(h.price)+' for a seat.'); afterChange(); toast(n+' paid '+inr(h.price)+'.'); break; }
+    case 'f-declines': { if(!h.declined.includes(d.n)){ h.declined.push(d.n); log(h,d.n+' can\'t make it.'); } toast(d.n+' can\'t make it.'); break; }
+    case 'f-pending': { if(openPlaces(h)>0 && !h.pending.some(x=>x.name===d.n)){ h.pending.push({name:d.n,you:false}); log(h,d.n+'\'s payment is pending with the bank.'); toast(d.n+'\'s payment is pending.'); } break; }
+    case 't+1': advance(60); break;
+    case 't+6': advance(360); break;
+    case 't-last': if(h&&h.status==='active'){ h.now = Math.max(h.now, h.endMin-59); } break;
+    case 't-end': advance(99999); break;
+    case 'resolve-all': { if(h){ [...h.pending].forEach(p=>{ if(h.status==='active') addPayer(p.name,p.you); }); } break; }
+  }
+  render();
+}
+function cancelHold(){
+  const h = S.hold; const u = unpaid(h);
+  h.kept += u*h.d*0.5; h.released.push(...h.seats);
+  log(h,'Hold cancelled. Paid friends refunded in full.');
+  const refunded = h.payers.length; h.seats=[]; endHold('cancelled'); h.result.refunded = refunded; render();
+}
+/* settings changed from demo selects */
+function setSel(kind, v){
+  if(kind==='hours') S.demo.hours = +v;
+  if(kind==='quota') S.demo.quota = v;
+  render();
+}
+
+/* ============ UPI ============ */
+function openUpi(o){ S.modal = Object.assign({type:'upi', stage:'choose'}, o); render(); }
+function runUpi(){
+  const m = S.modal; m.stage='processing'; render();
+  const res = S.demo.upi; S.demo.upi='success';
+  setTimeout(()=>{
+    if(!S.modal||S.modal.type!=='upi'||S.modal.stage!=='processing') return;
+    if(res==='fail'){ S.modal.stage='failed'; }
+    else if(res==='pending'){ S.modal.stage='pending'; if(m.purpose==='org'||m.purpose==='friend'){ S.hold.pending.push({name:m.name,you:m.purpose==='org'}); log(S.hold,(m.purpose==='org'?'Your':m.name+'\'s')+' payment is pending with the bank.'); } }
+    else { finishPayment(m); return; }
+    render();
+  }, 1100);
+}
+function finishPayment(m){
+  S.modal=null;
+  if(m.purpose==='deposit'){ createHold(); S.sel=[]; toast('Seats held until '+fmtDT(S.hold.endMin)+'.'); return; }
+  if(m.purpose==='org'){ addPayer('You',true); if(S.hold.status==='active') toast('Your seat is paid. Share the link so friends can pay theirs.'); else render(); return; }
+  if(m.purpose==='friend'){ addPayer(m.name,false); render(); return; }
+}
+function resolvePendingModal(){
+  const m = S.modal;
+  if(m.purpose==='deposit'){ finishPayment(m); return; }
+  const h=S.hold; if(h && h.status==='active'){ S.modal=null; addPayer(m.name,m.purpose==='org'); render(); } else { S.modal=null; render(); }
+}
+
+/* ============ Views ============ */
+function seatMap(){
+  let html='';
+  let lastCat='';
+  Object.keys(LAYOUT).forEach(r=>{
+    const cat = CAT[r];
+    if(cat!==lastCat){ html += `<div class="cat"><b>${inr(CATS[cat].price)}</b> ${CATS[cat].name}</div>`; lastCat=cat; }
+    let row = `<div class="srow"><span class="rl">${r}</span>`;
+    LAYOUT[r].split('').forEach((c,i)=>{
+      if(i===AISLE_AFTER+1) row += '<span class="aisle"></span>';
+      const id = r+(i+1);
+      if(c==='x') row += `<button class="seat sold" disabled aria-label="Seat ${id}, unavailable">${i+1}</button>`;
+      else row += `<button class="seat${S.sel.includes(id)?' sel':''}" data-a="seat" data-id="${id}" aria-label="Seat ${id}${S.sel.includes(id)?', selected':''}" aria-pressed="${S.sel.includes(id)}">${i+1}</button>`;
+    });
+    html += row + '</div>';
+  });
+  return html;
+}
+
+function seatsScreen(){
+  const n = S.sel.length; const total = S.sel.reduce((a,id)=>a+price(id),0); const gate = holdGate();
+  const sh = show();
+  return `
+  <div class="hdr"><button class="icon-btn" aria-label="Your orders" data-a="go" data-to="orders">\u2190</button>
+    <div class="grow"><h1>${MOVIE.title}</h1><small>${MOVIE.cinema} | ${sh.when}</small></div></div>
+  <div class="legend"><span><i></i>Available</span><span><i class="s"></i>Selected</span><span><i class="x"></i>Unavailable</span></div>
+  <div class="body"><div class="map">${seatMap()}<div class="screenbar"></div><div class="screenlbl">All eyes this way please</div></div></div>
+  <div class="ftr">
+    ${n===0 ? `<div class="center muted small" style="padding:10px 0">Select your seats</div>` : `
+    <div class="row between" style="margin-bottom:8px"><div><b>${pl(n,'seat')}</b> <span class="muted small">${sortSeats(S.sel).join(', ')}</span></div><b>${inr(total)}</b></div>
+    <div class="row">
+      <button class="btn outline" data-a="open-setup" ${gate.ok?'':'disabled'}>Hold for group</button>
+      <button class="btn" data-a="pay-normal">Pay ${inr(total)}</button>
+    </div>
+    ${gate.ok?'':`<div class="small muted" style="margin-top:8px">${gate.reason}</div>`}`}
+  </div>`;
+}
+
+function setupScreen(){
+  const d = S.draft;
+  if(d.durH===null || durState(d.durH)){
+    const avail = DUR.filter(x=>!durState(x.h)).map(x=>x.h);
+    d.durH = avail.includes(12)?12:(avail.length?Math.max(...avail):null);
+  }
+  const total = d.price*d.seats.length;
+  const runs = runsOf(d.seats);
+  const per = d.durH? depPerSeat(d.cat,d.price,d.durH) : 0; const dep = per*d.seats.length;
+  const opts = DUR.map(x=>{
+    const st = durState(x.h); const p = depPerSeat(d.cat,d.price,x.h)*d.seats.length;
+    const why = st==='time' ? 'Not available: the show is too close.' : st==='demand' ? 'Not available: this show is in high demand.' : '';
+    return `<button class="opt${d.durH===x.h?' on':''}" data-a="dur" data-h="${x.h}" ${st?'disabled':''} aria-pressed="${d.durH===x.h}">
+      <span class="radio"></span><span class="grow"><span class="t">${x.h} hours</span> <span class="muted small">${st?'':'ends '+fmtDT(x.h*60)}</span>
+      ${why?`<div class="small">${why}</div>`:''}</span><b>${st?'':inr(p)}</b></button>`;
+  }).join('');
+  return `
+  <div class="hdr"><button class="icon-btn" aria-label="Back" data-a="go" data-to="seats">\u2190</button>
+    <div class="grow"><h1>Hold seats for your group</h1><small>${MOVIE.title} | ${show().when}</small></div></div>
+  <div class="body">
+    <div class="card"><div class="row between"><b>${pl(d.seats.length,'seat')} | ${CATS[d.cat].name.charAt(0)+CATS[d.cat].name.slice(1).toLowerCase()}</b><b>${inr(total)}</b></div>
+      <div class="chips" style="margin-top:8px">${runs.map(r=>`<span class="chip">${runLabel(r)}</span>`).join('')}</div>
+      ${runs.length>1?`<div class="note info" style="margin-top:10px">Your seats are in ${runs.length} places. You and your friends can decide who sits where once the group is confirmed.</div>`:''}
+    </div>
+    <div class="card"><h2>How long should we hold them?</h2>
+      <div class="small muted">A longer hold needs a higher deposit.</div>${opts}
+    </div>
+    <div class="card"><h2>How it works</h2>
+      <div class="stack small">
+        <div>Friends pay only their own share on a link. You pay for your own seat too. Each seat's deposit comes back to you once the group is confirmed.</div>
+        <div><b>Release a seat early:</b> we keep 50% of that seat's deposit.<br><b>Time runs out:</b> we keep all of the deposit for unpaid seats.</div>
+        <div>Releasing seats or letting them expire may raise your deposit on future holds.</div>
+      </div>
+    </div>
+    ${d.durH? `<div class="card"><div class="kv"><span>Deposit per seat</span><b>${inr(per)}</b></div>
+      <div class="kv"><span>${pl(d.seats.length,'seat')}</span><b>${inr(dep)}</b></div>
+      ${higherRate(d.cat)?`<div class="small muted">Includes a higher rate for ${d.cat==='recliner'?'recliner seats':'high-demand shows'}.</div>`:''}
+      </div>`:''}
+  </div>
+  <div class="ftr">${d.durH?`<div class="row between small" style="margin-bottom:8px"><span class="muted">Most you can lose</span><b style="color:var(--amber)">${inr(dep)}</b></div>`:''}
+    <button class="btn" data-a="pay-deposit" ${d.durH?'':'disabled'}>Pay ${inr(dep)} and hold seats</button></div>`;
+}
+
+function dots(h){
+  let s='';
+  for(let i=0;i<h.seats.length;i++){
+    if(i<h.payers.length) s+=`<span class="dot paid" aria-label="Paid">\u2713</span>`;
+    else if(i<h.payers.length+h.pending.length) s+=`<span class="dot pend" aria-label="Pending">\u2026</span>`;
+    else s+=`<span class="dot" aria-label="Open"></span>`;
+  }
+  return `<div class="dots">${s}</div>`;
+}
+
+function ordersScreen(){
+  const h = S.hold;
+  let card = `<div class="card center muted" style="margin-top:30px">No upcoming orders yet.</div>`;
+  if(h){
+    const live = h.status==='active';
+    card = `<div class="card"><div class="row between"><b>${MOVIE.title}</b>
+        <span class="pill ${live?'warn':h.status==='confirmed'?'ok':''}">${live?'Group hold':h.status==='confirmed'?'Confirmed':'Ended'}</span></div>
+      <div class="small muted">${MOVIE.cinema} | ${show().when}</div>
+      ${live?`<div style="margin-top:8px" class="small">${h.payers.length} of ${h.seats.length} paid | ends in ${fmtDur(remaining(h))}</div>`:''}
+      <div style="margin-top:10px"><button class="btn outline" data-a="go" data-to="${live?'dash':'result'}">${live?'View hold':'View details'}</button></div></div>`;
+  }
+  return `<div class="hdr"><button class="icon-btn" aria-label="Back" data-a="go" data-to="seats">\u2190</button><div class="grow"><h1>Your Orders</h1></div></div>
+  <div class="body">${card}</div>`;
+}
+
+function dashScreen(){
+  const h = S.hold;
+  const meDone = h.payers.some(p=>p.you); const mePend = h.pending.some(p=>p.you);
+  const left = remaining(h);
+  const pct = Math.min(100, (h.now/h.endMin)*100);
+  const open = openPlaces(h);
+  const atRisk = unpaid(h)*h.d;
+  const runs = runsOf(h.seats);
+  const people = h.payers.map(p=>`<div class="person"><span class="av">${p.you?'Y':p.name[0]}</span><div class="grow"><b>${p.you?'You':p.name}</b><div class="small muted">Paid ${inr(h.price)}</div></div><span class="pill ok">Paid</span></div>`).join('')
+    + h.pending.map(p=>`<div class="person"><span class="av">${p.you?'Y':p.name[0]}</span><div class="grow"><b>${p.you?'You':p.name}</b><div class="small muted">Waiting for the bank to confirm</div></div><span class="pill warn">Pending</span></div>`).join('')
+    + h.declined.map(n=>`<div class="person"><span class="av">${n[0]}</span><div class="grow"><b>${n}</b><div class="small muted">Can't make it</div></div><span class="pill bad">Out</span></div>`).join('')
+    + (open>0?`<div class="person"><span class="av">+</span><div class="grow"><b>${pl(open,'open place')}</b><div class="small muted">Anyone with the link can take one</div></div></div>`:'');
+  return `
+  <div class="hdr"><button class="icon-btn" aria-label="Your orders" data-a="go" data-to="orders">\u2190</button>
+    <div class="grow"><h1>Your group hold</h1><small>${MOVIE.title} | ${show().when}</small></div></div>
+  <div class="body">
+    <div class="card">
+      <div class="small muted">${h.grace?'Hold ended':'Hold ends in'}</div>
+      <div class="bignum">${h.grace?'Waiting for payment':fmtDur(left)}</div>
+      <div class="small muted" style="margin:2px 0 8px">${fmtDT(h.endMin)}</div>
+      <div class="bar" aria-hidden="true"><i style="width:${pct}%"></i></div>
+      ${h.grace?`<div class="note" style="margin-top:10px">A payment is still pending with the bank, so we are holding the seats a few more minutes.</div>`:''}
+    </div>
+    <div class="card"><h2>${h.payers.length} of ${h.seats.length} places paid</h2>${dots(h)}
+      <div class="chips">${runs.map(r=>`<span class="chip">${runLabel(r)}</span>`).join('')}</div>
+      <div class="small muted" style="margin-top:8px">Seat numbers are assigned once your group is confirmed. Friends decide among themselves who sits where.</div>
+      ${runs.length>1?`<div class="small muted" style="margin-top:4px">Your seats are in ${runs.length} places.</div>`:''}
+    </div>
+    ${!meDone&&!mePend?`<div class="card" style="border-color:var(--red)"><div class="row between"><div><b>Your seat</b><div class="small muted">Pay for yours like everyone else</div></div>
+      <button class="btn sm" data-a="org-pay">Pay ${inr(h.price)}</button></div></div>`:''}
+    <div class="card"><h2>Invite friends</h2>
+      <div class="row" style="background:#f3f3f3;border-radius:8px;padding:8px 10px"><span class="grow small">${h.link}</span><button class="link" data-a="copy">Copy</button></div>
+      <div style="margin-top:10px"><button class="btn outline" data-a="share">Share on WhatsApp</button></div>
+    </div>
+    <div class="card"><h2>People</h2>${people}</div>
+    <div class="card"><h2>Your deposit</h2>
+      <div class="kv"><span>Deposit paid</span><b>${inr(D(h))}</b></div>
+      ${h.kept>0?`<div class="kv"><span>Kept so far</span><b>${inr(h.kept)}</b></div>`:''}
+      <div class="kv"><span>At risk if seats stay unpaid</span><b style="color:var(--amber)">${inr(atRisk)}</b></div>
+      <div class="small muted">Returned to you once your group is confirmed.</div>
+    </div>
+    <div class="card"><h2>Activity</h2>${h.log.slice(0,6).map(l=>`<div class="small" style="padding:3px 0"><span class="muted">${fmtT(l.m)}</span> ${l.t}</div>`).join('')}</div>
+    <div class="pad">
+      <div class="row" style="gap:8px"><button class="btn outline" data-a="open-release" ${open>0?'':'disabled'}>Release seats</button>
+        <button class="btn outline" data-a="open-finalize" ${h.pending.length?'disabled':''}>Finalize now</button></div>
+      <div class="small muted" style="margin-top:8px">Releasing seats or letting them expire may raise your deposit on future holds.</div>
+      <div class="center"><button class="link muted" data-a="open-cancel" style="margin-top:6px">Cancel the whole hold</button></div>
+    </div>
+  </div>`;
+}
+
+function resultScreen(){
+  const h = S.hold; const r = h.result;
+  const me = h.assign.find(a=>a.you);
+  const titles = {'all-paid':['Booking confirmed',''],'finalized':['Booking confirmed',''],'expired':['Hold ended. Booking confirmed',''],'none':['Hold ended','red'],'cancelled':['Hold cancelled','red']};
+  const t = titles[r.kind];
+  let msg = '';
+  if(r.kind==='all-paid') msg = `Everyone's paid. Your ${inr(r.returned)} deposit is on its way back to you. Completed holds may lower your future deposits.`;
+  if(r.kind==='finalized') msg = `${pl(h.assign.length,'seat')} confirmed. ${pl(r.released.length,'seat')} released and ${inr(r.kept)} of your deposit kept. ${inr(r.returned)} is on its way back to you. Releasing seats may raise your future deposits.`;
+  if(r.kind==='expired') msg = `${pl(h.assign.length,'paid seat')} confirmed. ${pl(r.released.length,'seat')} released (${r.released.join(', ')}) and ${inr(r.kept)} of your deposit kept. ${inr(r.returned)} is on its way back to you. Future holds may need a higher deposit.`;
+  if(r.kind==='none') msg = `No seats were paid, so all seats were released and your ${inr(r.kept)} deposit was kept. Future holds may need a higher deposit.`;
+  if(r.kind==='cancelled') msg = `${r.refunded?`${pl(r.refunded,'friend')} who paid ${r.refunded===1?'was':'were'} refunded in full. `:''}We kept ${inr(r.kept)} of your deposit and returned ${inr(r.returned)}. Future holds may need a higher deposit.`;
+  const confirmed = h.status==='confirmed';
+  return `
+  <div class="hdr"><button class="icon-btn" aria-label="Your orders" data-a="go" data-to="orders">\u2190</button><div class="grow"><h1>${t[0]}</h1><small>${MOVIE.title} | ${show().when}</small></div></div>
+  <div class="body">
+    <div class="card center"><div class="tick ${t[1]}">${confirmed?'\u2713':'\u00D7'}</div><div class="small">${msg}</div></div>
+    ${confirmed?`<div class="card"><h2>Seats assigned</h2>
+      ${h.assign.map(a=>`<div class="person"><span class="av">${a.you?'Y':a.name[0]}</span><div class="grow"><b>${a.you?'You':a.name}</b><div class="small muted">${a.you?'Your ticket is below':'Ticket sent to their phone'}</div></div><span class="chip red">${a.seat}</span></div>`).join('')}
+      <div class="small muted" style="margin-top:8px">Seats were given out in the order people paid. Swap among yourselves if you like.</div></div>
+      ${me?`<div class="ticket center"><div class="small muted">${MOVIE.title} | ${MOVIE.meta}</div><div class="small muted">${MOVIE.cinema}</div><div class="small">${show().when}</div>
+        <div class="seatno">${me.seat}</div><div class="qr" role="img" aria-label="Ticket QR code placeholder"></div><div class="small muted">M-Ticket</div></div>`:`<div class="card note plain">You did not pay for a seat in this booking.</div>`}`:''}
+    ${r.released.length?`<div class="card"><h2>Released seats</h2><div class="chips">${r.released.map(s=>`<span class="chip">${s}</span>`).join('')}</div></div>`:''}
+    <div class="card"><h2>Deposit</h2><div class="kv"><span>Paid</span><b>${inr(D(h))}</b></div><div class="kv"><span>Kept</span><b>${inr(r.kept)}</b></div><div class="kv"><span>Returned</span><b>${inr(r.returned)}</b></div></div>
+  </div>
+  <div class="ftr"><button class="btn outline" data-a="reset">Start over</button></div>`;
+}
+
+/* ---- Friend side ---- */
+function friendShell(inner, ftr){
+  return `<div class="hdr"><div class="grow"><h1>Seat invite</h1><small>BookMyShow</small></div></div><div class="body">${inner}</div>${ftr?`<div class="ftr">${ftr}</div>`:''}`;
+}
+function friendScreen(){
+  const h = S.hold;
+  if(!h) return friendShell(`<div class="card center muted" style="margin-top:30px">No invite yet. Switch to the organizer, start a hold, then come back and open the link as a friend.</div>`);
+  const name = S.viewAs;
+  const meta = `<div class="card"><div class="row"><span class="av">R</span><div><b>Rohan invited you</b><div class="small muted">to watch a movie together</div></div></div>
+    <hr class="sep"><b>${MOVIE.title}</b><div class="small muted">${MOVIE.meta} | ${MOVIE.cinema}</div><div class="small">${show().when}</div></div>`;
+  const payer = h.payers.find(p=>p.name===name && !p.you);
+  const pend = h.pending.find(p=>p.name===name && !p.you);
+  if((h.status==='confirmed' || h.status==='ended') && h.declined.includes(name) && !payer)
+    return friendShell(meta+`<div class="card center"><b>You told Rohan you can't make it.</b><div class="small muted">The hold has ended, so there's nothing more to do.</div></div>`);
+  if(h.status==='confirmed'){
+    const a = h.assign.find(x=>x.name===name && !x.you);
+    if(a) return friendShell(`<div class="card center"><div class="tick">\u2713</div><b>You're going!</b><div class="small muted">Your seat is ${a.seat}</div></div>
+      <div class="ticket center"><div class="small muted">${MOVIE.title} | ${MOVIE.meta}</div><div class="small muted">${MOVIE.cinema}</div><div class="small">${show().when}</div>
+      <div class="seatno">${a.seat}</div><div class="qr" role="img" aria-label="Ticket QR code placeholder"></div><div class="small muted">M-Ticket, also sent to your phone</div></div>`);
+    return friendShell(meta+`<div class="card center"><div class="tick red">\u00D7</div><b>The group is confirmed</b><div class="small muted">There was no place left for you in this booking.</div></div>`);
+  }
+  if(h.status==='ended') return friendShell(meta+`<div class="card center"><div class="tick red">\u00D7</div><b>This hold has ended</b><div class="small muted">The seats have been released. Ask Rohan to start a new hold.</div></div>`);
+  if(payer){
+    const locked = remaining(h) <= 60;
+    return friendShell(`<div class="card center"><div class="tick">\u2713</div><b>You're in</b>
+      <div class="small muted" style="margin-top:4px">You've paid ${inr(h.price)}. Your seat number arrives once the group is confirmed: when everyone has paid, or at ${fmtT(h.endMin)}, whichever comes first.</div></div>
+      <div class="card"><h2>${h.payers.length} of ${h.seats.length} places paid</h2>${dots(h)}<div class="small muted">Hold ends in ${fmtDur(remaining(h))}</div></div>
+      <div class="pad"><div class="note ok">You've cleared your part. Paying on time helps you get lower hold deposits when you organize.</div>
+      <div style="margin-top:12px"><button class="btn outline" data-a="open-withdraw" ${locked?'disabled':''}>Withdraw and get a refund</button></div>
+      ${locked?`<div class="small muted" style="margin-top:6px">Withdrawals are locked in the final hour so the organizer can plan.</div>`:`<div class="small muted" style="margin-top:6px">You can withdraw for a full refund until 1 hour before the hold ends.</div>`}</div>`);
+  }
+  if(pend) return friendShell(meta+`<div class="card center"><div class="tick amber">\u2026</div><b>Payment pending</b>
+    <div class="small muted" style="margin-top:4px">Your bank hasn't confirmed ${inr(h.price)} yet. <b>Please don't pay again.</b> Your place is reserved.</div>
+    <div style="margin-top:12px"><button class="btn outline" data-a="check-pending">Check status</button></div></div>`);
+  if(h.declined.includes(name)) return friendShell(meta+`<div class="card center"><b>You told Rohan you can't make it.</b><div class="small muted">Changed your mind? Ask Rohan to share the link again.</div></div>`);
+  if(openPlaces(h)<=0) return friendShell(meta+`<div class="card center"><b>All places are taken</b><div class="small muted">Ask Rohan if a place frees up.</div></div>`);
+  const runs = runsOf(h.seats);
+  return friendShell(meta+`
+    <div class="card"><h2>Your group's seats</h2>
+      <div class="chips">${runs.map(r=>`<span class="chip">${runLabel(r)}</span>`).join('')}</div>
+      <div class="small muted" style="margin-top:8px">${pl(h.seats.length,'seat')} | ${CATS[h.cat].name.charAt(0)+CATS[h.cat].name.slice(1).toLowerCase()}. Seat numbers are assigned once the group is confirmed, and you can decide who sits where.</div>
+      ${runs.length>1?`<div class="small muted" style="margin-top:4px">These seats are in ${runs.length} places.</div>`:''}
+    </div>
+    <div class="card"><div class="row between"><div><b>Your share</b><div class="small muted">No deposit needed. You only pay for your own seat.</div></div><b style="font-size:20px">${inr(h.price)}</b></div></div>
+    <div class="card"><h2>${openPlaces(h)} of ${h.seats.length} places left</h2>${dots(h)}<div class="small muted">Hold ends in ${fmtDur(remaining(h))} (${fmtDT(h.endMin)})</div></div>
+    <div class="card small muted">Your ticket will be sent to +91 98\u2022\u2022\u2022\u2022\u2022210. No account needed.</div>`,
+    `<button class="btn" data-a="friend-pay">Pay ${inr(h.price)} with UPI</button><div class="center"><button class="link muted" data-a="decline">I can't make it</button></div>`);
+}
+
+/* ---- Overlays ---- */
+function overlayHTML(){
+  const m = S.modal; if(!m) return '';
+  const h = S.hold;
+  if(m.type==='upi'){
+    let inner='';
+    if(m.stage==='choose') inner = `<h3>Pay ${inr(m.amount)}</h3><div class="small muted">${m.title}. Choose a UPI app.</div>${UPIS.map(u=>`<button class="upi" data-a="upi-pick"><span class="logo">${u[0]}</span><span class="grow">${u}</span></button>`).join('')}<div class="center"><button class="link muted" data-a="upi-close">Cancel</button></div>`;
+    if(m.stage==='processing') inner = `<h3 class="center">Waiting for approval</h3><div class="spin"></div><div class="small muted center">Approve the request in your UPI app.</div>`;
+    if(m.stage==='failed') inner = `<div class="center"><div class="tick red">\u00D7</div><h3>Payment didn't go through</h3><div class="small muted">${m.purpose==='deposit'?"You haven't been charged and your seats aren't held yet.":"You haven't been charged. Your place is held for a few more minutes."}</div></div><div class="stack" style="margin-top:12px"><button class="btn" data-a="upi-retry">Try again</button><button class="btn ghost" data-a="upi-close">Close</button></div>`;
+    if(m.stage==='pending') inner = `<div class="center"><div class="tick amber">\u2026</div><h3>Payment pending</h3><div class="small muted"><b>Don't pay again.</b> Your bank hasn't confirmed ${inr(m.amount)} yet. ${m.purpose==='deposit'?'Your seats will be held as soon as it clears.':'Your place is reserved while we wait.'}</div></div><div class="stack" style="margin-top:12px"><button class="btn outline" data-a="upi-check">Check status</button><button class="btn ghost" data-a="upi-close">Close</button></div>`;
+    return `<div class="sheet" role="dialog" aria-modal="true">${inner}</div>`;
+  }
+  if(m.type==='share'){
+    return `<div class="sheet" role="dialog" aria-modal="true"><h3>Share with friends</h3>
+      <div class="note plain" style="margin:8px 0">Rohan is holding ${pl(h.seats.length,'seat')} for ${MOVIE.title} on ${show().when}. Pay your ${inr(h.price)} share before ${fmtDT(h.endMin)} to join: ${h.link}</div>
+      <div class="stack"><button class="btn" data-a="copy">Copy message</button><button class="btn outline" data-a="preview-friend">Preview as a friend</button><button class="btn ghost" data-a="close-modal">Close</button></div></div>`;
+  }
+  if(m.type==='release'){
+    const n = Math.min(m.n, openPlaces(h)); const gone = trimSeats(h.seats,n);
+    return `<div class="modal" role="dialog" aria-modal="true"><h3>Release ${pl(n,'seat')}?</h3>
+      <div class="stepper"><button data-a="rel-dec" aria-label="Fewer" ${n<=1?'disabled':''}>\u2212</button><b>${n}</b><button data-a="rel-inc" aria-label="More" ${n>=openPlaces(h)?'disabled':''}>+</button></div>
+      <div class="small">We'll release <b>${gone.join(', ')}</b>. Isolated seats go first, and we never split seats that are together. The seats go back on sale right away.</div>
+      <div class="note" style="margin:10px 0"><b>You'll lose ${inr(n*h.d*0.5)}</b> (50% of those seats' deposit). This may raise your deposit on future holds.</div>
+      <div class="stack"><button class="btn" data-a="close-modal">Keep holding</button>
+      <button class="btn outline" data-a="org-pay-from-modal">Pay for a seat instead (${inr(h.price)})</button>
+      <button class="btn danger" data-a="do-release">Release ${pl(n,'seat')}</button></div></div>`;
+  }
+  if(m.type==='finalize'){
+    const n = openPlaces(h);
+    return `<div class="modal" role="dialog" aria-modal="true"><h3>Finalize with ${pl(h.payers.length,'seat')}?</h3>
+      <div class="small">${n>0?`We'll release ${pl(n,'unpaid seat')} (${trimSeats(h.seats,n).join(', ')}) and confirm the booking now.`:'Everyone has paid. Confirming now.'}</div>
+      ${n>0?`<div class="note" style="margin:10px 0"><b>You'll lose ${inr(n*h.d*0.5)}</b> (50% of those seats' deposit). This may raise your deposit on future holds.</div>`:''}
+      ${h.payers.length===0?`<div class="note bad" style="margin-bottom:10px">Nobody has paid yet, so this will cancel the hold.</div>`:''}
+      <div class="stack"><button class="btn" data-a="close-modal">Keep holding</button><button class="btn danger" data-a="do-finalize">Finalize now</button></div></div>`;
+  }
+  if(m.type==='cancel'){
+    const u = unpaid(h);
+    return `<div class="modal" role="dialog" aria-modal="true"><h3>Cancel the whole hold?</h3>
+      <div class="small">${h.payers.length?`${pl(h.payers.length,'friend')} who paid will be refunded in full right away. `:''}All seats go back on sale.</div>
+      <div class="note" style="margin:10px 0"><b>You'll lose ${inr(u*h.d*0.5)}</b> (50% of the deposit for unpaid seats). This may raise your deposit on future holds.</div>
+      <div class="stack"><button class="btn" data-a="close-modal">Keep holding</button><button class="btn danger" data-a="do-cancel">Cancel hold</button></div></div>`;
+  }
+  if(m.type==='withdraw'){
+    return `<div class="modal" role="dialog" aria-modal="true"><h3>Withdraw from the group?</h3>
+      <div class="small">You'll get a full refund of ${inr(h.price)}. Your place reopens and Rohan will be told.</div>
+      <div class="stack" style="margin-top:12px"><button class="btn" data-a="close-modal">Stay in the group</button><button class="btn danger" data-a="do-withdraw">Withdraw</button></div></div>`;
+  }
+  return '';
+}
+
+/* ---- Demo panel ---- */
+function demoHTML(){
+  const h = S.hold; const live = h && h.status==='active';
+  const seg = (act, cur, items) => `<div class="seg" role="group">${items.map(([v,l])=>`<button data-a="${act}" data-v="${v}" class="${cur===v?'on':''}" aria-pressed="${cur===v}">${l}</button>`).join('')}</div>`;
+  let friends = '';
+  if(live){
+    const names = POOL.slice(0, Math.max(1,h.origCount-1));
+    friends = `<h3>Friends (as if they used the link)</h3>` + names.map(n=>{
+      const paid = h.payers.some(p=>p.name===n&&!p.you), pend = h.pending.some(p=>p.name===n&&!p.you), dec = h.declined.includes(n);
+      const st = paid?'<span class="pill ok">paid</span>':pend?'<span class="pill warn">pending</span>':dec?'<span class="pill bad">out</span>':'';
+      const off = paid||dec;
+      return `<div class="frow"><span class="n">${n} ${st}</span><button class="mini" data-a="f-pays" data-n="${n}" ${off?'disabled':''}>Pays</button><button class="mini" data-a="f-pending" data-n="${n}" ${off||pend?'disabled':''}>Pending</button><button class="mini" data-a="f-declines" data-n="${n}" ${off?'disabled':''}>Can't go</button></div>`;
+    }).join('') + (h.pending.length?`<div style="margin-top:6px"><button class="mini" data-a="resolve-all">Bank confirms pending payments</button></div>`:'');
+    friends += `<h3>Time (hold ${live?'ends in '+fmtDur(remaining(h)):''})</h3><div class="btnrow"><button class="mini" data-a="t+1">+1 hour</button><button class="mini" data-a="t+6">+6 hours</button><button class="mini" data-a="t-last">Jump to last hour</button><button class="mini" data-a="t-end">Jump to the end</button></div>`;
+  }
+  const friendPick = S.role==='friend' ? `<div style="margin-top:8px"><label class="small muted" for="viewas">Viewing the link as</label><select id="viewas" onchange="act('viewas',{v:this.value})">${POOL.map(n=>`<option ${n===S.viewAs?'selected':''}>${n}</option>`).join('')}</select></div>`:'';
+  return `<h2>Prototype controls</h2>
+  <p>Not part of the product. Use these to explore every state of the design.</p>
+  <h3>View as</h3>${seg('role',S.role,[['org','Organizer (Rohan)'],['friend','Friend']])}${friendPick}
+  <h3>Show and demand (for new holds)</h3>
+  <label class="small muted" for="hrs">Show starts in</label>
+  <select id="hrs" onchange="setSel('hours',this.value)">${SHOWS.map(s=>`<option value="${s.h}" ${s.h===S.demo.hours?'selected':''}>${s.label}</option>`).join('')}</select>
+  <div style="margin-top:8px" class="small muted">Demand for this show</div>${seg('demand',S.demo.demand,[['normal','Normal'],['high','High'],['veryhigh','Very high']])}
+  <div style="margin-top:8px"><label class="small muted" for="qt">Group hold quota for this show</label>
+  <select id="qt" onchange="setSel('quota',this.value)"><option value="open" ${S.demo.quota==='open'?'selected':''}>Space available</option><option value="full" ${S.demo.quota==='full'?'selected':''}>Full</option></select></div>
+  <h3>Next UPI payment</h3>${seg('upi-next',S.demo.upi,[['success','Succeeds'],['pending','Pending'],['fail','Fails']])}
+  ${friends}
+  <h3>Prototype</h3><button class="mini" data-a="reset">Reset everything</button>`;
+}
+
+/* ============ Render ============ */
+let lastKey = '';
+function currentScreen(){
+  if(S.role==='friend') return friendScreen();
+  if(S.screen==='dash' && S.hold && S.hold.status!=='active') S.screen='result';
+  if(S.screen==='dash' && !S.hold) S.screen='seats';
+  if(S.screen==='result' && !S.hold) S.screen='seats';
+  if(S.screen==='setup' && !S.draft) S.screen='seats';
+  switch(S.screen){
+    case 'setup': return setupScreen();
+    case 'dash': return dashScreen();
+    case 'result': return resultScreen();
+    case 'orders': return ordersScreen();
+    default: return seatsScreen();
+  }
+}
+function render(){
+  const sc = $('#screen'); const prev = sc.querySelector('.body'); const top = prev?prev.scrollTop:0;
+  const html = currentScreen();
+  const key = S.role+':'+(S.role==='friend'?S.viewAs:S.screen);
+  sc.innerHTML = html;
+  const b = sc.querySelector('.body'); if(b && key===lastKey) b.scrollTop = top; lastKey = key;
+  const ov = $('#overlay'); ov.innerHTML = overlayHTML(); ov.className = S.modal?'on':'';
+  const t = $('#toast'); t.textContent = S.toast||''; t.className = S.toast?'on':'';
+  const dm = $('#demo'); const keepSel = document.activeElement && document.activeElement.id;
+  dm.innerHTML = demoHTML(); dm.className = 'demo'+(S.demoOpen?' open':'');
+  if(keepSel){ const el=document.getElementById(keepSel); if(el&&el.focus) el.focus(); }
+}
+document.addEventListener('click', e=>{
+  const el = e.target.closest('[data-a]'); if(!el || el.disabled) return;
+  if(el.dataset.a==='org-pay-from-modal'){ S.modal=null; act('org-pay',{}); return; }
+  act(el.dataset.a, el.dataset);
+});
+render();
+</script>
+</body>
+</html>
