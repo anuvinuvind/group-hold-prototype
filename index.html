@@ -170,7 +170,8 @@ const SHOWS = [
   {h:24,label:'24 hours away',when:'Sat, 21 Nov | 3:00 PM'},
   {h:7.5,label:'7 hours away',when:'Fri, 20 Nov | 10:30 PM'}
 ];
-const DUR = [{h:6,pct:.08},{h:12,pct:.12},{h:18,pct:.16}];
+const DUR = [{h:6,pct:.05},{h:12,pct:.08},{h:18,pct:.10}];
+const FEE_RATE = 0.118; // convenience fee as a share of ticket price (about 11.8% in a real BookMyShow confirm screen)
 const POOL = ['Aman','Riya','Karan','Sneha','Meera','Dev','Isha','Neil','Zoya'];
 const BASE = new Date('2026-11-20T15:00:00');
 const UPIS = ['Google Pay','PhonePe','Paytm','Navi','BHIM'];
@@ -276,7 +277,8 @@ function toast(msg){
 function createHold(){
   const d = S.draft;
   const per = depPerSeat(d.cat, d.price, d.durH);
-  S.hold = {seats:[...d.seats], origCount:d.seats.length, cat:d.cat, price:d.price, durH:d.durH, d:per,
+  const fee = Math.round(d.price*FEE_RATE);
+  S.hold = {seats:[...d.seats], origCount:d.seats.length, cat:d.cat, price:d.price, fee, pay:d.price+fee, durH:d.durH, d:per,
     endMin:d.durH*60, now:0, payers:[], pending:[], declined:[], released:[], kept:0,
     status:'active', grace:false, result:null, assign:[], log:[], link:'bms.in/g/RH-4KQ9'};
   log(S.hold, 'Hold started. Deposit of '+inr(D(S.hold))+' paid.');
@@ -286,7 +288,7 @@ function addPayer(name,you){
   const h = S.hold; if(!h||h.status!=='active') return;
   h.pending = h.pending.filter(x=>x.name!==name || x.you!==you);
   h.payers.push({name,you:!!you,at:h.now});
-  log(h, (you?'You':name)+' paid '+inr(h.price)+' for a seat.');
+  log(h, (you?'You':name)+' paid '+inr(h.pay)+' for a seat.');
   afterChange();
 }
 function afterChange(){
@@ -368,8 +370,8 @@ function act(a, d){
       openUpi({purpose:'deposit', amount:per*S.draft.seats.length, title:'Hold deposit'});
       return;
     }
-    case 'org-pay': openUpi({purpose:'org', amount:h.price, title:'Your seat', name:'You'}); return;
-    case 'friend-pay': openUpi({purpose:'friend', amount:h.price, title:'Your seat', name:S.viewAs}); return;
+    case 'org-pay': openUpi({purpose:'org', amount:h.pay, title:'Your seat', name:'You'}); return;
+    case 'friend-pay': openUpi({purpose:'friend', amount:h.pay, title:'Your seat', name:S.viewAs}); return;
     case 'upi-pick': runUpi(); return;
     case 'upi-retry': S.modal.stage='choose'; break;
     case 'upi-close': S.modal=null; break;
@@ -377,6 +379,8 @@ function act(a, d){
     case 'close-modal': S.modal=null; break;
 
     case 'share': S.modal={type:'share'}; break;
+    case 'remind': S.modal={type:'remind'}; break;
+    case 'copy-reminder': { S.modal=null; log(h,'You sent a reminder to your friends.'); toast('Reminder copied. Paste it into your group chat.'); break; }
     case 'copy': toast('Link copied.'); return;
     case 'preview-friend': { S.modal=null; S.role='friend'; const free=POOL.find(n=>!h.payers.some(p=>p.name===n)&&!h.pending.some(p=>p.name===n)); S.viewAs=free||POOL[0]; break; }
 
@@ -401,16 +405,16 @@ function act(a, d){
     case 'open-withdraw': S.modal={type:'withdraw'}; break;
     case 'do-withdraw': {
       S.modal=null; h.payers = h.payers.filter(p=>p.name!==S.viewAs);
-      log(h, S.viewAs+' withdrew and was refunded '+inr(h.price)+'. Place reopened.');
-      toast('Withdrawn. '+inr(h.price)+' will be refunded to your UPI account.'); break;
+      log(h, S.viewAs+' withdrew and was refunded '+inr(h.pay)+'. Place reopened.');
+      toast('Withdrawn. '+inr(h.pay)+' will be refunded to your UPI account.'); break;
     }
     case 'decline': { if(!h.declined.includes(S.viewAs)){ h.declined.push(S.viewAs); log(h,S.viewAs+' can\'t make it.'); } toast('Rohan has been told you can\'t make it.'); break; }
     case 'check-pending': { const name = S.viewAs; const p = h.pending.find(x=>x.name===name&&!x.you); if(p) addPayer(name,false); break; }
 
     /* demo-panel friend/time controls */
-    case 'f-pays': { const n=d.n; if(h.pending.some(x=>x.name===n)){ addPayer(n,false); toast(n+' paid '+inr(h.price)+'.'); break; }
+    case 'f-pays': { const n=d.n; if(h.pending.some(x=>x.name===n)){ addPayer(n,false); toast(n+' paid '+inr(h.pay)+'.'); break; }
       if(openPlaces(h)<=0){ toast('No open places left.'); break; }
-      h.payers.push({name:n,you:false,at:h.now}); log(h,n+' paid '+inr(h.price)+' for a seat.'); afterChange(); toast(n+' paid '+inr(h.price)+'.'); break; }
+      h.payers.push({name:n,you:false,at:h.now}); log(h,n+' paid '+inr(h.pay)+' for a seat.'); afterChange(); toast(n+' paid '+inr(h.pay)+'.'); break; }
     case 'f-declines': { if(!h.declined.includes(d.n)){ h.declined.push(d.n); log(h,d.n+' can\'t make it.'); } toast(d.n+' can\'t make it.'); break; }
     case 'f-pending': { if(openPlaces(h)>0 && !h.pending.some(x=>x.name===d.n)){ h.pending.push({name:d.n,you:false}); log(h,d.n+'\'s payment is pending with the bank.'); toast(d.n+'\'s payment is pending.'); } break; }
     case 't+1': advance(60); break;
@@ -534,6 +538,7 @@ function setupScreen(){
     ${d.durH? `<div class="card"><div class="kv"><span>Deposit per seat</span><b>${inr(per)}</b></div>
       <div class="kv"><span>${pl(d.seats.length,'seat')}</span><b>${inr(dep)}</b></div>
       ${higherRate(d.cat)?`<div class="small muted">Includes a higher rate for ${d.cat==='recliner'?'recliner seats':'high-demand shows'}.</div>`:''}
+      <div class="small muted" style="margin-top:6px">The deposit has no extra fee. Each seat's convenience fee (about ${inr(Math.round(d.price*FEE_RATE))}) is added when that seat is paid, so each friend sees the full price before paying.</div>
       </div>`:''}
   </div>
   <div class="ftr">${d.durH?`<div class="row between small" style="margin-bottom:8px"><span class="muted">Most you can lose</span><b style="color:var(--amber)">${inr(dep)}</b></div>`:''}
@@ -573,7 +578,7 @@ function dashScreen(){
   const open = openPlaces(h);
   const atRisk = unpaid(h)*h.d;
   const runs = runsOf(h.seats);
-  const people = h.payers.map(p=>`<div class="person"><span class="av">${p.you?'Y':p.name[0]}</span><div class="grow"><b>${p.you?'You':p.name}</b><div class="small muted">Paid ${inr(h.price)}</div></div><span class="pill ok">Paid</span></div>`).join('')
+  const people = h.payers.map(p=>`<div class="person"><span class="av">${p.you?'Y':p.name[0]}</span><div class="grow"><b>${p.you?'You':p.name}</b><div class="small muted">Paid ${inr(h.pay)}</div></div><span class="pill ok">Paid</span></div>`).join('')
     + h.pending.map(p=>`<div class="person"><span class="av">${p.you?'Y':p.name[0]}</span><div class="grow"><b>${p.you?'You':p.name}</b><div class="small muted">Waiting for the bank to confirm</div></div><span class="pill warn">Pending</span></div>`).join('')
     + h.declined.map(n=>`<div class="person"><span class="av">${n[0]}</span><div class="grow"><b>${n}</b><div class="small muted">Can't make it</div></div><span class="pill bad">Out</span></div>`).join('')
     + (open>0?`<div class="person"><span class="av">+</span><div class="grow"><b>${pl(open,'open place')}</b><div class="small muted">Anyone with the link can take one</div></div></div>`:'');
@@ -594,10 +599,11 @@ function dashScreen(){
       ${runs.length>1?`<div class="small muted" style="margin-top:4px">Your seats are in ${runs.length} places.</div>`:''}
     </div>
     ${!meDone&&!mePend?`<div class="card" style="border-color:var(--red)"><div class="row between"><div><b>Your seat</b><div class="small muted">Pay for yours like everyone else</div></div>
-      <button class="btn sm" data-a="org-pay">Pay ${inr(h.price)}</button></div></div>`:''}
+      <button class="btn sm" data-a="org-pay">Pay ${inr(h.pay)}</button></div></div>`:''}
     <div class="card"><h2>Invite friends</h2>
       <div class="row" style="background:#f3f3f3;border-radius:8px;padding:8px 10px"><span class="grow small">${h.link}</span><button class="link" data-a="copy">Copy</button></div>
-      <div style="margin-top:10px"><button class="btn outline" data-a="share">Share on WhatsApp</button></div>
+      <div class="row" style="margin-top:10px;gap:8px"><button class="btn outline" data-a="share">Share on WhatsApp</button>
+        ${open+h.pending.length>0?`<button class="btn outline" data-a="remind">Remind friends</button>`:''}</div>
     </div>
     <div class="card"><h2>People</h2>${people}</div>
     <div class="card"><h2>Your deposit</h2>
@@ -668,14 +674,14 @@ function friendScreen(){
   if(payer){
     const locked = remaining(h) <= 60;
     return friendShell(`<div class="card center"><div class="tick">\u2713</div><b>You're in</b>
-      <div class="small muted" style="margin-top:4px">You've paid ${inr(h.price)}. Your seat number arrives once the group is confirmed: when everyone has paid, or at ${fmtT(h.endMin)}, whichever comes first.</div></div>
+      <div class="small muted" style="margin-top:4px">You've paid ${inr(h.pay)}. Your seat number arrives once the group is confirmed: when everyone has paid, or at ${fmtT(h.endMin)}, whichever comes first.</div></div>
       <div class="card"><h2>${h.payers.length} of ${h.seats.length} places paid</h2>${dots(h)}<div class="small muted">Hold ends in ${fmtDur(remaining(h))}</div></div>
       <div class="pad"><div class="note ok">You've cleared your part. Paying on time helps you get lower hold deposits when you organize.</div>
       <div style="margin-top:12px"><button class="btn outline" data-a="open-withdraw" ${locked?'disabled':''}>Withdraw and get a refund</button></div>
       ${locked?`<div class="small muted" style="margin-top:6px">Withdrawals are locked in the final hour so the organizer can plan.</div>`:`<div class="small muted" style="margin-top:6px">You can withdraw for a full refund until 1 hour before the hold ends.</div>`}</div>`);
   }
   if(pend) return friendShell(meta+`<div class="card center"><div class="tick amber">\u2026</div><b>Payment pending</b>
-    <div class="small muted" style="margin-top:4px">Your bank hasn't confirmed ${inr(h.price)} yet. <b>Please don't pay again.</b> Your place is reserved.</div>
+    <div class="small muted" style="margin-top:4px">Your bank hasn't confirmed ${inr(h.pay)} yet. <b>Please don't pay again.</b> Your place is reserved.</div>
     <div style="margin-top:12px"><button class="btn outline" data-a="check-pending">Check status</button></div></div>`);
   if(h.declined.includes(name)) return friendShell(meta+`<div class="card center"><b>You told Rohan you can't make it.</b><div class="small muted">Changed your mind? Ask Rohan to share the link again.</div></div>`);
   if(openPlaces(h)<=0) return friendShell(meta+`<div class="card center"><b>All places are taken</b><div class="small muted">Ask Rohan if a place frees up.</div></div>`);
@@ -686,10 +692,11 @@ function friendScreen(){
       <div class="small muted" style="margin-top:8px">${pl(h.seats.length,'seat')} | ${CATS[h.cat].name.charAt(0)+CATS[h.cat].name.slice(1).toLowerCase()}. Seat numbers are assigned once the group is confirmed, and you can decide who sits where.</div>
       ${runs.length>1?`<div class="small muted" style="margin-top:4px">These seats are in ${runs.length} places.</div>`:''}
     </div>
-    <div class="card"><div class="row between"><div><b>Your share</b><div class="small muted">No deposit needed. You only pay for your own seat.</div></div><b style="font-size:20px">${inr(h.price)}</b></div></div>
+    <div class="card"><div class="row between"><div><b>Your share</b><div class="small muted">No deposit needed. You only pay for your own seat.</div></div><b style="font-size:20px">${inr(h.pay)}</b></div>
+      <hr class="sep"><div class="kv"><span>Ticket</span><span>${inr(h.price)}</span></div><div class="kv"><span>Convenience fee</span><span>${inr(h.fee)}</span></div><div class="kv"><b>Total</b><b>${inr(h.pay)}</b></div></div>
     <div class="card"><h2>${openPlaces(h)} of ${h.seats.length} places left</h2>${dots(h)}<div class="small muted">Hold ends in ${fmtDur(remaining(h))} (${fmtDT(h.endMin)})</div></div>
     <div class="card small muted">Your ticket will be sent to +91 98\u2022\u2022\u2022\u2022\u2022210. No account needed.</div>`,
-    `<button class="btn" data-a="friend-pay">Pay ${inr(h.price)} with UPI</button><div class="center"><button class="link muted" data-a="decline">I can't make it</button></div>`);
+    `<button class="btn" data-a="friend-pay">Pay ${inr(h.pay)} with UPI</button><div class="center"><button class="link muted" data-a="decline">I can't make it</button></div>`);
 }
 
 /* ---- Overlays ---- */
@@ -706,8 +713,15 @@ function overlayHTML(){
   }
   if(m.type==='share'){
     return `<div class="sheet" role="dialog" aria-modal="true"><h3>Share with friends</h3>
-      <div class="note plain" style="margin:8px 0">Rohan is holding ${pl(h.seats.length,'seat')} for ${MOVIE.title} on ${show().when}. Pay your ${inr(h.price)} share before ${fmtDT(h.endMin)} to join: ${h.link}</div>
+      <div class="note plain" style="margin:8px 0">Rohan is holding ${pl(h.seats.length,'seat')} for ${MOVIE.title} on ${show().when}. Pay your ${inr(h.pay)} share before ${fmtDT(h.endMin)} to join: ${h.link}</div>
       <div class="stack"><button class="btn" data-a="copy">Copy message</button><button class="btn outline" data-a="preview-friend">Preview as a friend</button><button class="btn ghost" data-a="close-modal">Close</button></div></div>`;
+  }
+  if(m.type==='remind'){
+    const left = openPlaces(h);
+    return `<div class="sheet" role="dialog" aria-modal="true"><h3>Remind friends</h3>
+      <div class="small muted">Friends who haven't paid yet won't get a notification from the app, so copy this into your group chat.</div>
+      <div class="note plain" style="margin:8px 0">Reminder: ${pl(left,'place')} left for ${MOVIE.title} on ${show().when}. Pay your ${inr(h.pay)} (fee included) before ${fmtDT(h.endMin)}, or the seats go back on sale: ${h.link}</div>
+      <div class="stack"><button class="btn" data-a="copy-reminder">Copy reminder</button><button class="btn ghost" data-a="close-modal">Close</button></div></div>`;
   }
   if(m.type==='release'){
     const n = Math.min(m.n, openPlaces(h)); const gone = trimSeats(h.seats,n);
@@ -716,7 +730,7 @@ function overlayHTML(){
       <div class="small">We'll release <b>${gone.join(', ')}</b>. Isolated seats go first, and we never split seats that are together. The seats go back on sale right away.</div>
       <div class="note" style="margin:10px 0"><b>You'll lose ${inr(n*h.d*0.5)}</b> (50% of those seats' deposit). This may raise your deposit on future holds.</div>
       <div class="stack"><button class="btn" data-a="close-modal">Keep holding</button>
-      <button class="btn outline" data-a="org-pay-from-modal">Pay for a seat instead (${inr(h.price)})</button>
+      <button class="btn outline" data-a="org-pay-from-modal">Pay for a seat instead (${inr(h.pay)})</button>
       <button class="btn danger" data-a="do-release">Release ${pl(n,'seat')}</button></div></div>`;
   }
   if(m.type==='finalize'){
@@ -736,7 +750,7 @@ function overlayHTML(){
   }
   if(m.type==='withdraw'){
     return `<div class="modal" role="dialog" aria-modal="true"><h3>Withdraw from the group?</h3>
-      <div class="small">You'll get a full refund of ${inr(h.price)}. Your place reopens and Rohan will be told.</div>
+      <div class="small">You'll get a full refund of ${inr(h.pay)}. Your place reopens and Rohan will be told.</div>
       <div class="stack" style="margin-top:12px"><button class="btn" data-a="close-modal">Stay in the group</button><button class="btn danger" data-a="do-withdraw">Withdraw</button></div></div>`;
   }
   return '';
